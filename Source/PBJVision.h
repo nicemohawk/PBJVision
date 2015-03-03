@@ -29,13 +29,13 @@
 // vision types
 
 typedef NS_ENUM(NSInteger, PBJCameraDevice) {
-    PBJCameraDeviceBack = UIImagePickerControllerCameraDeviceRear,
-    PBJCameraDeviceFront = UIImagePickerControllerCameraDeviceFront
+    PBJCameraDeviceBack = 0,
+    PBJCameraDeviceFront
 };
 
 typedef NS_ENUM(NSInteger, PBJCameraMode) {
-    PBJCameraModePhoto = UIImagePickerControllerCameraCaptureModePhoto,
-    PBJCameraModeVideo = UIImagePickerControllerCameraCaptureModeVideo
+    PBJCameraModePhoto = 0,
+    PBJCameraModeVideo
 };
 
 typedef NS_ENUM(NSInteger, PBJCameraOrientation) {
@@ -58,13 +58,13 @@ typedef NS_ENUM(NSInteger, PBJExposureMode) {
 };
 
 typedef NS_ENUM(NSInteger, PBJFlashMode) {
-    PBJFlashModeOff  = AVCaptureFlashModeOff,
-    PBJFlashModeOn   = AVCaptureFlashModeOn,
+    PBJFlashModeOff = AVCaptureFlashModeOff,
+    PBJFlashModeOn = AVCaptureFlashModeOn,
     PBJFlashModeAuto = AVCaptureFlashModeAuto
 };
 
 typedef NS_ENUM(NSInteger, PBJMirroringMode) {
-	PBJMirroringAuto,
+	PBJMirroringAuto = 0,
 	PBJMirroringOn,
 	PBJMirroringOff
 };
@@ -77,9 +77,9 @@ typedef NS_ENUM(NSInteger, PBJAuthorizationStatus) {
 
 typedef NS_ENUM(NSInteger, PBJOutputFormat) {
     PBJOutputFormatPreset = 0,
-    PBJOutputFormatSquare,
-    PBJOutputFormatWidescreen,
-    PBJOutputFormatStandard /* 4:3 */
+    PBJOutputFormatSquare, // 1:1
+    PBJOutputFormatWidescreen, // 16:9
+    PBJOutputFormatStandard // 4:3
 };
 
 // PBJError
@@ -91,7 +91,9 @@ typedef NS_ENUM(NSInteger, PBJVisionErrorType)
     PBJVisionErrorUnknown = -1,
     PBJVisionErrorCancelled = 100,
     PBJVisionErrorSessionFailed = 101,
-    PBJVisionErrorBadOutputFile = 102
+    PBJVisionErrorBadOutputFile = 102,
+    PBJVisionErrorOutputFileExists = 103,
+    PBJVisionErrorCaptureFailed = 104,
 };
 
 // photo dictionary keys
@@ -134,6 +136,9 @@ static CGFloat const PBJVideoBitRate1280x750 = 5000000 * 8;
 @property (nonatomic) PBJCameraOrientation cameraOrientation;
 @property (nonatomic) PBJCameraMode cameraMode;
 @property (nonatomic) PBJCameraDevice cameraDevice;
+// Indicates whether the capture session will make use of the app’s shared audio session. Allows you to
+// use a previously configured audios session with a category such as AVAudioSessionCategoryAmbient.
+@property (nonatomic) BOOL usesApplicationAudioSession;
 - (BOOL)isCameraDeviceAvailable:(PBJCameraDevice)cameraDevice;
 
 @property (nonatomic) PBJFlashMode flashMode; // flash and torch
@@ -163,12 +168,15 @@ static CGFloat const PBJVideoBitRate1280x750 = 5000000 * 8;
 @property (nonatomic, readonly) AVCaptureVideoPreviewLayer *previewLayer;
 @property (nonatomic) BOOL autoUpdatePreviewOrientation;
 @property (nonatomic) PBJCameraOrientation previewOrientation;
+@property (nonatomic) BOOL autoFreezePreviewDuringCapture;
+
 @property (nonatomic, readonly) CGRect cleanAperture;
 
 - (void)startPreview;
 - (void)stopPreview;
 
-- (void)unfreezePreview; // preview is automatically timed and frozen with photo capture
+- (void)freezePreview;
+- (void)unfreezePreview;
 
 // focus, exposure, white balance
 
@@ -286,6 +294,7 @@ static CGFloat const PBJVideoBitRate1280x750 = 5000000 * 8;
 - (void)visionDidStartVideoCapture:(PBJVision *)vision;
 - (void)visionDidPauseVideoCapture:(PBJVision *)vision; // stopped but not ended
 - (void)visionDidResumeVideoCapture:(PBJVision *)vision;
+- (void)visionDidEndVideoCapture:(PBJVision *)vision;
 - (void)vision:(PBJVision *)vision capturedVideo:(NSDictionary *)videoDict error:(NSError *)error;
 
 // video capture progress
